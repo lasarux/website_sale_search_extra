@@ -1,30 +1,44 @@
 # -*- coding: utf-8 -*-
 from openerp import http
+from openerp.http import request
+#import redis
 
-# class WebsiteSaleSearchExtra(http.Controller):
-#     @http.route('/website_sale_search_extra/website_sale_search_extra/', auth='public')
-#     def index(self, **kw):
-#         return "Hello, world"
-
-#     @http.route('/website_sale_search_extra/website_sale_search_extra/objects/', auth='public')
-#     def list(self, **kw):
-#         return http.request.render('website_sale_search_extra.listing', {
-#             'root': '/website_sale_search_extra/website_sale_search_extra',
-#             'objects': http.request.env['website_sale_search_extra.website_sale_search_extra'].search([]),
-#         })
-
-#     @http.route('/website_sale_search_extra/website_sale_search_extra/objects/<model("website_sale_search_extra.website_sale_search_extra"):obj>/', auth='public')
-#     def object(self, obj, **kw):
-#         return http.request.render('website_sale_search_extra.object', {
-#             'object': obj
-#         })
+#r = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 class WebsiteSaleSearchExtra(http.Controller):
-    @http.route('/shop/search', auth='public', type='json')
-    def temp(self, **kwargs):
-        print '>>> status', kwargs
+
+    def _get_search_domain(self, search):
+        # TODO: add category and attributes
+        domain = request.website.sale_product_domain()
+        if search:
+            for srch in search.split(" "):
+                domain += [
+                    '|', '|', '|', '|', ('name', 'ilike', srch), ('description', 'ilike', srch),
+                    ('description_sale', 'ilike', srch), ('product_variant_ids.default_code', 'ilike', srch),
+                    ('website_description', 'ilike', srch),
+                ]
+        return domain
+
+    @http.route('/shop/search', auth='public', type='json', website=True)
+    def search(self, **post):
+        context = request.context
+        search = post['search']
+        domain = self._get_search_domain(search)
+
+        product_obj = http.request.env['product.template']
+        product_count = product_obj.with_context(context).search_count(domain)
+        products = product_obj.with_context(context).search(domain)
+
+        data = []
+        for product in products:
+            data.append({
+                'name': product.name,
+                'description': product.description_sale,
+                'image': product.image_medium,
+                'url': product.website_url
+            })
 
         return {
             'status': 'ok',
-            'query': kwargs['query']
+            'data': data
         }

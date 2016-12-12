@@ -11,7 +11,7 @@ odoo.define('website_sale_search_extra.search_dynamic', function (require) {
             this.$target.find(".oe_search_box").on("input", function(e) {
                 if (this.value.length > 3) {
                     ajax.jsonRpc("/shop/search", "call", {
-                        query: this.value
+                        search: this.value
                     }).then(function(data) {
                         self.render(data);
                     });
@@ -19,9 +19,8 @@ odoo.define('website_sale_search_extra.search_dynamic', function (require) {
             });
         },
         render: function (data) {
-            console.log("render", data);
-            console.log(this.$target.find(".query-result"));
-            this.$target.find(".query-result").text(data["query"]);
+            console.log("data", data);
+            //this.$target.find(".query-result").text(data["query"]);
         }
     });
 
